@@ -117,6 +117,56 @@ urf_arbitrator_set_block (UrfArbitrator  *arbitrator,
 }
 
 /**
+ * urf_arbitrator_set_block_cycle
+ */
+
+static int rfkill_cycle_mask;
+
+gboolean
+urf_arbitrator_set_block_cycle (UrfArbitrator *arbitrator)
+{
+	UrfArbitratorPrivate *priv = arbitrator->priv;
+
+	/* cycling state machine */
+	int i, block;
+	int rfkill_cycle_mask_t = rfkill_cycle_mask;
+
+	if (!(rfkill_hwmask & rfkill_cycle_mask_t)) // block all
+	{
+		for (i = 1; i < NUM_RFKILL_TYPES; ++i)
+			if (rfkill_hwmask & (1 << (i - 1)))
+				rfkill_cycle_mask_t |= (1<<(i-1));
+	}
+	else
+	{
+		for (i = 1; i < NUM_RFKILL_TYPES; ++i)
+			if (rfkill_hwmask & (1 << (i - 1)))
+			{
+				if ((1<<(i-1)) > rfkill_cycle_mask_t) /* enable all */
+					rfkill_cycle_mask_t = 0; 
+
+				else if ((rfkill_hwmask & ~rfkill_cycle_mask_t)) /* block */
+					rfkill_cycle_mask_t |= (1<<(i-1)); 
+
+				else /* unblock */
+					rfkill_cycle_mask_t &= ~(1<<(i-1));
+			}
+	}
+
+	/* set the rfkill status */
+	for (i = 1; i < NUM_RFKILL_TYPES; ++i)
+		if (priv->killswitch[i])
+		{
+			UrfKillswitchPrivate *kpriv = priv->killswitch[i]->priv;
+			if ((kpriv->state != -1) && kpriv->devices && (rfkill_hwmask ^ rfkill_cycle_mask_t & (1<<(i-1))))
+				urf_arbitrator_set_block (arbitrator, i, rfkill_cycle_mask_t & (1<<(i-1)));
+		}
+
+	rfkill_cycle_mask = rfkill_cycle_mask_t;
+	return TRUE;
+}
+
+/**
  * urf_arbitrator_set_block_idx:
  **/
 gboolean

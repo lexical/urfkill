@@ -23,9 +23,15 @@
 
 #include <linux/rfkill.h>
 #include <glib-object.h>
+#include <dbus/dbus-glib.h>
+#include <linux/rfkill.h>
+
+#define BASE_OBJECT_PATH "/org/freedesktop/URfkill"
 
 #include "urf-device.h"
 #include "urf-utils.h"
+
+guint rfkill_hwmask;
 
 G_BEGIN_DECLS
 
@@ -40,6 +46,16 @@ G_BEGIN_DECLS
 					URF_TYPE_KILLSWITCH))
 #define URF_GET_KILLSWITCH_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), \
 					URF_TYPE_KILLSWITCH, UrfKillswitchClass))
+
+struct UrfKillswitchPrivate
+{
+	GList		 *devices;
+	enum rfkill_type  type;
+	KillswitchState   state;
+	DBusGConnection	 *connection;
+	char		 *object_path;
+	guint		  hw_mask;
+};
 
 typedef struct UrfKillswitchPrivate UrfKillswitchPrivate;
 

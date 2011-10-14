@@ -31,8 +31,6 @@
 #include "urf-killswitch-glue.h"
 #include "urf-device.h"
 
-#define BASE_OBJECT_PATH "/org/freedesktop/URfkill/"
-
 enum
 {
 	PROP_0,
@@ -47,15 +45,6 @@ enum
 };
 
 static guint signals[SIGNAL_LAST] = { 0 };
-
-struct UrfKillswitchPrivate
-{
-	GList		 *devices;
-	enum rfkill_type  type;
-	KillswitchState   state;
-	DBusGConnection	 *connection;
-	char		 *object_path;
-};
 
 G_DEFINE_TYPE (UrfKillswitch, urf_killswitch, G_TYPE_OBJECT)
 
@@ -148,6 +137,8 @@ urf_killswitch_add_device (UrfKillswitch *killswitch,
 	if (urf_device_get_rf_type (device) != priv->type ||
 	    g_list_find (priv->devices, (gconstpointer)device) != NULL)
 		return;
+
+	rfkill_hwmask |= priv->type;
 
 	priv->devices = g_list_prepend (priv->devices,
 					(gpointer)g_object_ref (device));

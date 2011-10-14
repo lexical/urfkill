@@ -164,9 +164,10 @@ urf_daemon_input_event_cb (UrfInput *input,
 	}
 
 	if (priv->master_key)
-		type = RFKILL_TYPE_ALL;
-
-	urf_arbitrator_set_block (arbitrator, type, block);
+		if ( type == RFKILL_TYPE_ALL )
+			urf_arbitrator_set_block_cycle (arbitrator);
+	else
+		urf_arbitrator_set_block (arbitrator, type, block);
 out:
 	g_signal_emit (daemon, signals[SIGNAL_URFKEY_PRESSED], 0, code);
 }
